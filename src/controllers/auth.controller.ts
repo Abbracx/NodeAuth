@@ -2,8 +2,12 @@ import { Request, Response } from 'express'
 import { Joi } from 'express-validation'
 import bcryptjs from 'bcryptjs'
 import { User, UserModel } from '../models/user.model';
-import { JwtPayload, sign, verify } from 'jsonwebtoken'
+import { JwtPayload, sign, verify, Secret, GetPublicKeyOrSecret } from 'jsonwebtoken'
+import * as dotenv from 'dotenv'
 
+dotenv.config()
+
+const JWT_SECRET = process.env.JWT_SECRET as Secret;
 
 const registerValidation = Joi.object({
     firstName: Joi.string().required(), 
@@ -53,14 +57,14 @@ export const login = async ( req: Request, res: Response) => {
         return res.status(400).send({ message: "invalid credentials..." });
     }
 
-    const token = sign( { _id: user._id }, 'secret')
+    const token = sign({ _id: user._id }, JWT_SECRET);
     res.cookie('jwt', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
     res.send({ message: 'success' })
 }
 
 export const user = async ( req: Request, res: Response) => {
     const cookie = req.cookies.jwt
-    const payload = verify(cookie, 'secret')
+    const payload = verify(cookie, JWT_SECRET)
 
     if(!payload){
         res.status(400).send({ message: 'unauthenticated' } )
