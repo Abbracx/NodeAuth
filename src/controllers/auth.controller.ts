@@ -1,8 +1,8 @@
 import { Request, Response } from 'express'
 import { Joi } from 'express-validation'
 import bcryptjs from 'bcryptjs'
-import { UserModel } from '../models/user.model';
-import { sign } from 'jsonwebtoken'
+import { User, UserModel } from '../models/user.model';
+import { JwtPayload, sign, verify } from 'jsonwebtoken'
 
 
 const registerValidation = Joi.object({
@@ -56,4 +56,22 @@ export const login = async ( req: Request, res: Response) => {
     const token = sign( { _id: user._id }, 'secret')
     res.cookie('jwt', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
     res.send({ message: 'success' })
+}
+
+export const user = async ( req: Request, res: Response) => {
+    const cookie = req.cookies.jwt
+    const payload = verify(cookie, 'secret')
+
+    if(!payload){
+        res.status(400).send({ message: 'unauthenticated' } )
+    }
+
+    const user = await UserModel.findOne({ _id: (payload as JwtPayload)._id })
+
+    if (!user) {
+      res.status(400).send({ message: "unauthenticated" });
+    }
+
+    const { password, ...data} = (user as User).toJSON()
+    res.send({data, cookie})
 }

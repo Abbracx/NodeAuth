@@ -2,13 +2,14 @@ import express, { Request, Response, NextFunction } from 'express'
 import { routes } from './src/routes';
 import  mongoose from 'mongoose'; 
 import cors from 'cors';
+import cookieParser from 'cookie-parser' 
 
 
 mongoose.connect('mongodb://localhost/node_auth').then( ()=>{
     console.log('connected to the database... ')
 })
 const app = express(); 
-
+app.use(cookieParser())
 app.use(cors({ origin: 'http://localhost:3000', credentials: true}))
 app.use(express.json());
 
