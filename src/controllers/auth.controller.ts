@@ -63,19 +63,29 @@ export const login = async ( req: Request, res: Response) => {
 }
 
 export const user = async ( req: Request, res: Response) => {
-    const cookie = req.cookies.jwt
-    const payload = verify(cookie, JWT_SECRET)
+    try{
+        const cookie = req.cookies.jwt
+        const payload = verify(cookie, JWT_SECRET)
 
-    if(!payload){
-        res.status(400).send({ message: 'unauthenticated' } )
+        if(!payload){
+            res.status(400).send({ message: 'unauthenticated' } )
+        }
+
+        const user = await UserModel.findOne({ _id: (payload as JwtPayload)._id })
+
+        if (!user) {
+        res.status(400).send({ message: "unauthenticated" });
+        }
+
+        const { password, ...data} = (user as User).toJSON()
+        res.send({data, cookie})
+    }catch(error){
+        res.status(400).send({ message: "unauthenticated" })
     }
+    
+}
 
-    const user = await UserModel.findOne({ _id: (payload as JwtPayload)._id })
-
-    if (!user) {
-      res.status(400).send({ message: "unauthenticated" });
-    }
-
-    const { password, ...data} = (user as User).toJSON()
-    res.send({data, cookie})
+export const logout = (req: Request, res: Response) => {
+    res.cookie("jwt", "", { maxAge: 1 });
+    res.send({message: "Successfully logged out"})
 }
